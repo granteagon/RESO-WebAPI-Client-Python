@@ -1,6 +1,11 @@
+import six
 import json
 from base64 import b64encode
-from urllib import parse
+
+if six.PY2:
+    from urlparse import urlparse
+elif six.PY3:
+    from urllib.parse import urlparse
 
 import requests
 from bs4 import BeautifulSoup
@@ -14,19 +19,19 @@ class OpenIDAuthentication(object):
     USERNAME_INPUTS = ['j_username', 'username', 'user', 'email']
     PASSWORD_INPUTS = ['j_password', 'password', 'pass']
 
-    def __init__(self, reso, redirect_uri=None, scope=None, auth_code=None):
+    def __init__(self, reso, redirect_uri=None, scope=None, auth_code=None, grant_type='authorization_code'):
         if not isinstance(reso, RESO):
             raise ValueError('Must be of type RESO')
         self.reso = reso
         self.response_type = 'code'
         self.auth_code = auth_code
         self.scope = scope
-        self.grant_type = 'authorization_code'
+        self.grant_type = grant_type
         self.redirect_uri = redirect_uri
         self.context = requests.Session()
 
     def _form_authentication_url(self, bs, return_response):
-        parsed_url = parse.urlparse(self.reso.api_auth_url)
+        parsed_url = urlparse(self.reso.api_auth_url)
         if "{{model.loginUrl}}" in return_response['url']:
             script_tag_text = bs.find(id='modelJson').text.replace("&quot;", '"')
             script_parameters = json.loads(script_tag_text)
@@ -47,7 +52,7 @@ class OpenIDAuthentication(object):
                 url = parsed_url.scheme + '://' + parsed_url.netloc + return_response['url']
 
         self.reso.logger.debug('Formed url {}'.format(url))
-        if not parse.urlparse(url):
+        if not urlparse(url):
             raise ValueError('Could not obtain RESO API login URL from the response.')
         return url
 
@@ -120,7 +125,7 @@ class OpenIDAuthentication(object):
         self._fill_authentication_data(return_response, username, password)
         auth_code_response = self.context.post(url, data=return_response['inputs'], headers=headers, verify=self.reso.verify_ssl)
         self.reso.logger.info('Getting auth code from the latest redirect')
-        parsed_parameters = parse.parse_qs(parse.urlparse(auth_code_response.url, allow_fragments=False).query)
+        parsed_parameters = parse.parse_qs(urlparse(auth_code_response.url, allow_fragments=False).query)
         if parsed_parameters.keys():
             auth_code = parsed_parameters[list(parsed_parameters.keys())[0]]
             self.reso.logger.info('Parsed auth code from url parameters')
@@ -135,7 +140,8 @@ class OpenIDAuthentication(object):
         :return: access_token
         """
         # Check needed vars on OpenIDAuthentication class
-        check_needed_class_vars(self, ['auth_code', 'redirect_uri'])
+        # check_needed_class_vars(self, ['auth_code', 'redirect_uri'])
+        check_needed_class_vars(self, ['redirect_uri'])
 
         # Check needed vars on RESO class
         check_needed_class_vars(self.reso, ['client_id', 'client_secret', 'api_token_url'])
@@ -147,7 +153,7 @@ class OpenIDAuthentication(object):
         url_parameters = {
             'client_id': self.reso.client_id,
             'grant_type': self.grant_type,
-            'code': self.auth_code,
+            # 'code': self.auth_code,
             'redirect_uri': self.redirect_uri,
         }
         self.reso.logger.info('Retrieving access token: {} with headers {} and parameters {}'.format(
@@ -165,7 +171,7 @@ class OpenIDAuthentication(object):
         return
 
         # Check needed vars on OpenIDAuthentication class
-        check_needed_class_vars(self, ['auth_code'])
+        # check_needed_class_vars(self, ['auth_code'])
 
         # Check needed vars on RESO class
         check_needed_class_vars(self.reso, ['client_id', 'client_secret', 'access_token'])
@@ -204,6 +210,3 @@ class OpenIDAuthentication(object):
             'redirect_uri': self.redirect_uri,
         }
         return self.reso.api_auth_url + '?' + parse.urlencode(url_parameters)
-
-
-
