@@ -1,8 +1,11 @@
+import six
 import json
 import os
 import xml.etree.cElementTree as ElementTree
-from urllib import parse
-
+if six.PY2:
+    from urlparse import urlparse
+elif six.PY3:
+    from urllib.parse import urlparse
 import requests
 
 from reso_api.constants import FORMATS
@@ -32,7 +35,7 @@ class HttpRequest(object):
             else:
                 returnable_url = typical_case
 
-        if not parse.urlparse(returnable_url):
+        if not urlparse(returnable_url):
             raise ValueError('Could not parse request url: {}'.format(returnable_url))
         return returnable_url
 
@@ -188,3 +191,104 @@ class HttpRequest(object):
         """
         self.reso.logger.info('Requesting resource metadata')
         return self.request('$metadata', request_accept_type=None)
+
+    def request_metadata_to_file(self, filename, overwrite=False, indent=None, output_format=None, request_accept_type=None):
+        """
+        Executes metadata GET request on provided api url and stores received content in a file.
+        :param filename: full path of file where to store response info
+        :param overwrite: whether overwrite file in case it exists or not
+        :param indent: Pretty format json output with tab space <indent>. None is no indent
+        :return: True in case function has been completed successfully
+        """
+        self.reso.logger.info('Requesting resource metadata')
+        return self.request_to_file('$metadata', filename, request_accept_type=request_accept_type,
+                                    overwrite=overwrite, indent=indent, output_format=output_format)
+
+    def request_resource(self, resource_name, request_accept_type=None, output_format=None,
+                            filename=None, overwrite=False, indent=None):
+            """
+            Executes GET request on provided resource name
+            :param resource_name: resource name to execute GET request
+            :param request_accept_type: request accept type header value
+            :param output_format: output format 'json' or 'xml'
+            :param filename: full path of file where to store response info
+            :param overwrite: whether overwrite file in case it exists or not
+            :param indent: Pretty format json output with tab space <indent>. None is no indent
+            :return: response of received resource
+            """
+            self.reso.logger.info('Requesting resource {}'.format(resource_name))
+            if filename:
+                return self.request_to_file(resource_name, filename, request_accept_type, output_format, overwrite, indent)
+            else:
+                return self.request(resource_name, request_accept_type)
+
+    def request_resource_to_file(self, resource_name, filename, request_accept_type=None,
+                                    output_format=None, overwrite=False, indent=None):
+        """
+        Executes GET request on provided resource name and stores received content in a file.
+        :param resource_name: resource name to execute GET request
+        :param filename: full path of file where to store response info
+        :param request_accept_type: request accept type header value
+        :param output_format: output format 'json' or 'xml'
+        :param overwrite: whether overwrite file in case it exists or not
+        :param indent: Pretty format json output with tab space <indent>. None is no indent
+        :return: True in case function has been completed successfully
+        """
+        self.reso.logger.info('Requesting resource {} to file'.format(resource_name))
+        return self.request_to_file(resource_name, filename, request_accept_type, output_format, overwrite, indent)
+
+    def request_resource_by_id(self, resource_name, resource_id, request_accept_type=None, output_format=None,
+                                filename=None, overwrite=False, indent=None):
+        """
+        Executes GET request on provided resource name and resource id
+        :param resource_name: resource name to execute GET request
+        :param resource_id: resource id to execute GET request
+        :param request_accept_type: request accept type header value
+        :param output_format: output format 'json' or 'xml'
+        :param filename: full path of file where to store response info
+        :param overwrite: whether overwrite file in case it exists or not
+        :param indent: Pretty format json output with tab space <indent>. None is no indent
+        :return: response of received resource
+        """
+        self.reso.logger.info('Requesting resource {} by id {}'.format(resource_name, resource_id))
+        if filename:
+            return self.request_to_file(resource_name + '(' + resource_id + ')', filename, request_accept_type,
+                                        output_format, overwrite, indent)
+        else:
+            return self.request(resource_name + '(' + resource_id + ')', request_accept_type)
+
+    def request_resource_by_id_to_file(self, resource_name, resource_id, filename, request_accept_type=None,
+                                        output_format=None, overwrite=False, indent=None):
+        """
+        Executes GET request on provided resource name and resource id and stores received content in a file.
+        :param resource_name: resource name to execute GET request
+        :param resource_id: resource id to execute GET request
+        :param filename: full path of file where to store response info
+        :param request_accept_type: request accept type header value
+        :param output_format: output format 'json' or 'xml'
+        :param overwrite: whether overwrite file in case it exists or not
+        :param indent: Pretty format json output with tab space <indent>. None is no indent
+        :return: True in case function has been completed successfully
+        """
+        self.reso.logger.info('Requesting resource {} by id {} to file'.format(resource_name, resource_id))
+        return self.request_to_file(resource_name + '(' + resource_id + ')', filename, request_accept_type,
+                                    output_format, overwrite, indent)
+
+    def request_field_list(self, resource_name, request_accept_type=None, output_format=None,
+                            filename=None, overwrite=False, indent=None):
+        """
+        Executes GET request on provided resource name and field list
+        :param resource_name: resource name to execute GET request
+        :param request_accept_type: request accept type header value
+        :param output_format: output format 'json' or 'xml'
+        :param filename: full path of file where to store response info
+        :param overwrite: whether overwrite file in case it exists or not
+        :param indent: Pretty format json output with tab space <indent>. None is no indent
+        :return: response of received resource
+        """
+        self.reso.logger.info('Requesting field list for resource {}'.format(resource_name))
+        if filename:
+            return self.request_to_file(resource_name + '/$fieldlist', filename, request_accept_type,
+                                        output_format, overwrite, indent)
+        else:
+            return self.request(resource_name + '/$fieldlist', request_accept_type)
