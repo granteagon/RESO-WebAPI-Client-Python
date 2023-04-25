@@ -24,16 +24,20 @@ class HttpRequest(object):
 
     def _return_formed_url(self, request_url):
         typical_case = self.reso.api_request_url + request_url
-        if self.reso.api_request_url.endswith('/'):
-            if not request_url.startswith('/'):
-                returnable_url = typical_case
-            else:
-                returnable_url = self.reso.api_request_url[:-1] + request_url
+        # don't change anything if it's already a full url
+        if request_url.startswith('http'):
+            returnable_url = request_url
         else:
-            if not request_url.startswith('/'):
-                returnable_url = self.reso.api_request_url + '/' + request_url
+            if self.reso.api_request_url.endswith('/'):
+                if not request_url.startswith('/'):
+                    returnable_url = typical_case
+                else:
+                    returnable_url = self.reso.api_request_url[:-1] + request_url
             else:
-                returnable_url = typical_case
+                if not request_url.startswith('/'):
+                    returnable_url = self.reso.api_request_url + '/' + request_url
+                else:
+                    returnable_url = typical_case
 
         if not urlparse(returnable_url):
             raise ValueError('Could not parse request url: {}'.format(returnable_url))
@@ -141,6 +145,15 @@ class HttpRequest(object):
                     "Response: {}".format(response.json() if response.json() else response)
                 )
         return response
+
+    def request_result_count(self, request_url):
+        """
+        Executes GET request and returns result count
+        :param request_url: path where to execute GET request
+        :return: returns result count
+        """
+        response = self.request(request_url, request_accept_type='json')
+        return response.json()['@odata.count']
 
     def request_to_file(self, request_url, filename, request_accept_type=None,
                         output_format=None, overwrite=False, indent=None):
