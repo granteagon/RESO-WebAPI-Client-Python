@@ -4,8 +4,11 @@ import os
 import xml.etree.cElementTree as ElementTree
 if six.PY2:
     from urlparse import urlparse
+    from simplejson import JSONDecodeError
 elif six.PY3:
     from urllib.parse import urlparse
+    from json.decoder import JSONDecodeError
+
 import requests
 
 from reso_api.constants import FORMATS
@@ -99,7 +102,9 @@ class HttpRequest(object):
             else:
                 try:
                     msg = response.json()
-                except json.decoder.JSONDecodeError:
+                except JSONDecodeError:
+                    msg = response
+                except ValueError:
                     msg = response
                 raise RequestError(
                     "Could not retrieve API response. "
