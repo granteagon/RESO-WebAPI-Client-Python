@@ -202,13 +202,18 @@ class HttpRequest(object):
 
         return True
 
-    def request_metadata(self):
+    def request_metadata(self, resource=None):
         """
         Executes metadata GET request on provided api url
         :return: response of received metadata
         """
-        self.reso.logger.info('Requesting resource metadata')
-        return self.request('$metadata', request_accept_type=None)
+        self.reso.logger.info('Requesting resource metadata...')
+        path = ''
+        if self.reso.metadata_url_includes_resource:
+            self.reso.logger.debug('adding resource', resource)
+            path += resource or 'Property' + '/'
+        path += '$metadata'
+        return self.request(path, request_accept_type=None)
 
     def request_metadata_to_file(self, filename, overwrite=False, indent=None, output_format=None, request_accept_type=None):
         """
