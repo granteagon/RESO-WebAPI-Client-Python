@@ -34,8 +34,8 @@ setup(
     test_suite='nose.collector',
     tests_require=['nose'],
     install_requires=[
-        'bs4==0.0.1',
-        'urllib3==1.26.5',
-        'requests==2.22.0',
+        'bs4',
+        'urllib3',
+        'requests',
     ],
 )
