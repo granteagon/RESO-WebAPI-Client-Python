@@ -209,7 +209,7 @@ class HttpRequest(object):
         """
         self.reso.logger.info('Requesting resource metadata...')
         path = ''
-        if self.reso.metadata_url_includes_resource:
+	if getattr(self.reso, 'metadata_url_includes_resource', None):
             self.reso.logger.debug('adding resource', resource)
             path += resource or 'Property' + '/'
         path += '$metadata'
